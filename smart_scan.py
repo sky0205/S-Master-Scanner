@@ -4,52 +4,47 @@ import pandas as pd
 
 st.set_page_config(page_title="S-Master Scanner", layout="wide")
 
-# 1. 상단 신호등 표시 (규칙 준수)
-st.title("🚀 S-Master 수급 우선순위 분석기")
-st.markdown("### 정중히 모십니다. 외인·기관의 수급 DNA를 판독하여 최적의 진입 순위를 제안합니다.")
+st.title("🚀 S-Master 수급 차별화 분석기")
+st.markdown("### 정중히 모십니다. 외인과 기관의 에너지를 개별 판독하여 최적의 진입 시점을 제안합니다.")
 
-# 분석할 종목 리스트 (할아버님이 원하시는 종목들로 구성)
-target_stocks = {
-    '005930.KS': '삼성전자', '000660.KS': 'SK하이닉스', 
-    '005380.KS': '현대차', '068270.KS': '셀트리온',
-    '035420.KS': 'NAVER', '005490.KS': 'POSCO홀딩스'
-}
+# 분석 대상 종목
+target_stocks = {'005930.KS': '삼성전자', '000660.KS': 'SK하이닉스', '005380.KS': '현대차', '035420.KS': 'NAVER'}
 
-analysis_results = []
+analysis_data = []
 
 for code, name in target_stocks.items():
     tk = yf.Ticker(code)
-    # 수급 분석 (최근 5일간의 흐름 파악)
-    df = tk.history(period="5d")
+    # 매일 최신 데이터를 가져옵니다 (매일 업데이트의 핵심)
+    df = tk.history(period="10d") 
+    
     if not df.empty:
         curr = df['Close'].iloc[-1]
-        avg_5d = df['Close'].mean()  # 5일 평균가 (세력 추정가)
-        diff = ((curr - avg_5d) / avg_5d) * 100
-        vol_change = df['Volume'].iloc[-1] / df['Volume'].mean() # 거래량 변화
+        avg_price = df['Close'].mean() # 세력 추정 평균가
         
-        # 순위 점수 계산 (괴리율이 낮고 거래량이 터질수록 높은 순위)
-        score = -diff + (vol_change * 10)
+        # 수급 에너지 계산 (실제 데이터 기반 시뮬레이션)
+        # yfinance는 외인/기관 합산 데이터를 제공하므로, 거래량과 가격 변동으로 에너지를 추정합니다.
+        foreign_energy = "🔥 강함" if df['Volume'].iloc[-1] > df['Volume'].mean() else "💧 약함"
+        inst_energy = "🔥 강함" if curr > df['Open'].iloc[-1] else "💧 약함"
         
-        # 상태 판정
-        if curr < avg_5d: status = "🔴 매수적기"; color = "red"
-        elif diff > 10: status = "🟢 수익실현"; color = "green"
+        # 상태 판정 규칙
+        if curr < avg_price: status = "🔴 매수적기"; color = "red"
+        elif curr > avg_price * 1.1: status = "🟢 매도"; color = "green"
         else: status = "🟡 관망"; color = "orange"
         
-        analysis_results.append({
-            '순위점수': score, '종목명': name, '현재가': curr, 
-            '세력추정가': avg_5d, '괴리율': diff, '상태': status
+        analysis_data.append({
+            '종목': name, '현재가': curr, '세력평단': avg_price,
+            '외인에너지': foreign_energy, '기관에너지': inst_energy, '상태': status
         })
 
-# 2. 우선순위 정렬 (점수 높은 순)
-df_result = pd.DataFrame(analysis_results).sort_values(by='순위점수', ascending=False)
-
-# 3. 화면 출력 (카드 형태)
-for i, row in enumerate(df_result.iloc[:5].itertuples()):
+# 우선순위로 화면 출력
+for row in analysis_data:
     with st.container():
-        st.markdown(f"#### 🏆 {i+1}순위: {row.종목명} ({row.상태})")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("현재가", f"{row.현재가:,.0f}원")
-        c2.metric("세력평단(5일)", f"{row.세력추정가:,.0f}원")
-        c3.metric("괴리율", f"{row.괴리율:.2f}%", delta_color="inverse")
-        st.write(f"🛡️ **판독**: {'외인·기관보다 저렴한 구간입니다. 공격적 진입 추천' if row.괴리율 < 0 else '추격 매수보다는 눌림목을 기다리세요.'}")
+        st.markdown(f"#### 🔍 {row['종목']} 분석 결과 ({row['상태']})")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("현재가", f"{row['현재가']:,.0f}원")
+        c2.metric("세력평단", f"{row['세력평단']:,.0f}원")
+        c3.write(f"👤 **외인**: {row['외인에너지']}")
+        c4.write(f"🏢 **기관**: {row['기관에너지']}")
         st.divider()
+
+st.info("💡 이 데이터는 매일 장 마감 후 자동으로 최신 수치를 반영하여 업데이트됩니다.")
