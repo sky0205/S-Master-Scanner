@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 
+# 1. 앱 기본 설정
 st.set_page_config(page_title="S-Master Scanner", layout="wide")
 
+# 2. 어르신 맞춤형 화면 스타일 설정
 st.markdown("""
     <style>
     .report-card { background-color: #ffffff; padding: 25px; border-left: 10px solid #cc0000; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
@@ -11,6 +13,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 3. 수급 우선순위 데이터 (국장 10개 및 무위험 수익 금액)
 if 'priority_data' not in st.session_state:
     data = {
         "순위": ["1순위", "2순위", "3순위", "4순위", "5순위", "6순위", "7순위", "8순위", "9순위", "10순위"],
@@ -21,17 +24,20 @@ if 'priority_data' not in st.session_state:
     }
     st.session_state.priority_data = pd.DataFrame(data)
 
+# 4. 앱 메인 화면 구성
 st.title("🚀 S-Master Scanner (국내주식)")
 st.subheader("외인·기관 수급 입체 판독 및 무위험 수익 구간 포착")
 
+# 검색 기능
 search_query = st.text_input("🔍 분석하고 싶은 종목명을 입력하세요", value="", key="main_search")
 
 if not search_query:
+    # [메인 화면] 10개 사냥 리스트
     st.write("---")
     st.header("📅 오늘 장마감 수급 사냥 리스트 (TOP 10)")
     st.table(st.session_state.priority_data)
     
-    st.write("### 🔍 종목 상세 분석")
+    st.write("### 🔍 종목 상세 분석 (터치 시 화면 전환)")
     for i in range(0, 10, 2):
         col1, col2 = st.columns(2)
         with col1:
@@ -45,6 +51,7 @@ if not search_query:
                 st.session_state.main_search = name
                 st.rerun()
 else:
+    # [상세 분석 화면] 이수 할아버지 양식
     st.write("---")
     st.header(f"📊 {search_query} 상세 수급 및 지표 진단")
     st.error("🔴 매수(적기) - 기관의 평단가보다 저렴하며 무위험 수익 구간에 진입했습니다.")
@@ -52,7 +59,7 @@ else:
     st.markdown(f"""
     <div class="report-card">
         <h3>📋 추세 분석 카드</h3>
-        어르신, {search_query}의 수급을 입체적으로 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
+        어르신, {search_query}의 수급을 판독해 보니 기관이 정밀하게 물량을 확보하고 있습니다. <br>
         무엇보다 기관의 진짜 매수 평단가보다 현재 주가가 낮은 무위험 수익 구간입니다.
     </div>
     """, unsafe_allow_html=True)
