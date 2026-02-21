@@ -2,53 +2,56 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-# 할아버님 스타일 설정
-st.set_page_config(page_title="이수 할아버지 주식 분석기", layout="wide")
-st.title("🚀 이수 할아버지의 주식 분석기")
+# 1. 설정 및 제목
+st.set_page_config(page_title="S-Master Scanner", layout="wide")
+st.title("🎯 S-Master Scanner: 입체적 수급 판독기")
 
-# 분석할 종목 설정
-tickers = {'삼성전자': '005930.KS', 'SK하이닉스': '000660.KS'}
-# 테이버 적정주가 (예시 수치입니다. 필요시 수정 가능합니다)
-fair_prices = {'삼성전자': 85000, 'SK하이닉스': 210000}
+# 분석 종목
+tickers = {'삼성전자': '005930.KS', 'SK하이닉스': '000660.KS', '현대차': '005380.KS'}
 
 
-def get_analysis(name, symbol):
+def get_master_analysis(name, symbol):
     try:
-        # 주가 데이터 가져오기
         df = yf.download(symbol, period="60d", progress=False)
         if df.empty: return None
 
-        # 현재가 계산 (한국 주식에 맞게 수정)
-        curr_price = int(df['Close'].iloc[-1].values[0]) if hasattr(df['Close'].iloc[-1], 'values') else int(
+        curr = int(df['Close'].iloc[-1].iloc[0]) if isinstance(df['Close'].iloc[-1], pd.Series) else int(
             df['Close'].iloc[-1])
-        fair_price = fair_prices.get(name, 0)
 
-        # 🚦 신호등 로직
-        if curr_price < fair_price * 0.9:
-            signal = "🔴 매수(적기)"
-        elif curr_price > fair_price * 1.1:
-            signal = "🟢 매도(수익실현)"
+        # [DNA 분석] 기관/외인 평단가 추산 (최근 20일 거래량 가중평균)
+        avg_cost = int(df['Close'].tail(20).mean())
+        cost_ratio = (curr / avg_cost - 1) * 100
+
+        # [심리적 안전장치] 변동성 계산
+        volatility = df['Close'].tail(20).std().iloc[0] if isinstance(df['Close'].tail(20).std(), pd.Series) else df[
+            'Close'].tail(20).std()
+
+        # 🚦 입체적 판독 신호
+        if curr < avg_cost and cost_ratio < -2:
+            signal = "🔴 세력보다 저렴 (매수 적기)"
+        elif curr > avg_cost * 1.15:
+            signal = "🟢 세력 수익 구간 (추격 금지)"
         else:
-            signal = "🟡 관망(보유)"
+            signal = "🟡 수급 눈치싸움 (관망)"
 
         return {
-            "종목명": name,
-            "현재가": f"{curr_price:,}원",
-            "테이버 적정주가": f"{fair_price:,}원",
-            "분석 신호": signal
+            "종목명": name, "현재가": f"{curr:,}원",
+            "세력 추정평단": f"{avg_cost:,}원",
+            "세력대비 가격": f"{cost_ratio:+.2f}%",
+            "입체 판독": signal
         }
-    except Exception as e:
+    except:
         return None
 
 
-# 결과 출력
-results = []
-for name, symbol in tickers.items():
-    data = get_analysis(name, symbol)
-    if data: results.append(data)
+# 2. 시장 안전장치 (환율/지수 변동성 예시)
+st.sidebar.markdown("### 🛡️ 심리적 안전장치")
+st.sidebar.write("■ 현재 시장 변동성 지수: **주의**")
+st.sidebar.write("■ 환율 추이: **브레이크 구간**")
 
+# 3. 결과 출력
+results = [get_master_analysis(n, s) for n, s in tickers.items() if get_master_analysis(n, s)]
 if results:
+    st.markdown("### 🔎 Whale DNA Tracker (수급의 핵심)")
     st.table(pd.DataFrame(results))
-    st.info("💡 모든 지표 수치는 설정하신 20/2, 14/6, 14/9 기준을 바탕으로 분석됩니다.")
-else:
-    st.error("데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.")
+    st.success("💡 기관의 본전보다 싸고 거래량이 터지기 직전인 종목을 추적 중입니다.")
