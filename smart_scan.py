@@ -11,6 +11,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+if 'main_search' not in st.session_state:
+    st.session_state.main_search = ""
+
 if 'priority_data' not in st.session_state:
     data = {
         "순위": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
@@ -21,17 +24,18 @@ if 'priority_data' not in st.session_state:
     }
     st.session_state.priority_data = pd.DataFrame(data)
 
-st.title("🚀 S-Master Scanner (국내주식 전용)")
+st.title("🚀 S-Master Scanner (국내주식)")
 st.subheader("외인·기관 수급 입체 판독 및 무위험 수익 구간 포착")
 
-search_query = st.text_input("🔍 분석하고 싶은 종목명을 입력하세요", value="", key="main_search")
+# 검색창 상태 유지
+search_query = st.text_input("🔍 종목명을 입력하세요", value=st.session_state.main_search)
 
 if not search_query:
     st.write("---")
     st.header("📅 오늘 장마감 수급 사냥 리스트 (TOP 10)")
     st.table(st.session_state.priority_data)
     
-    st.write("### 🔍 종목 상세 분석 (터치 시 화면 전환)")
+    st.write("### 🔍 종목 상세 분석 바로가기")
     for i in range(0, 10, 2):
         col1, col2 = st.columns(2)
         with col1:
@@ -52,9 +56,8 @@ else:
     st.markdown(f"""
     <div class="report-card">
         <h3>📋 추세 분석 카드</h3>
-        어르신, {search_query}의 수급을 입체적으로 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
+        어르신, {search_query}의 수급을 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
         무엇보다 기관의 진짜 매수 평단가보다 현재 주가가 낮은 무위험 수익 구간입니다. 
-        심리적 안전장치를 믿고 대응해 보세요.
     </div>
     """, unsafe_allow_html=True)
 
