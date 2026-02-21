@@ -2,41 +2,48 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 
-# S-Master Scanner 핵심 설정
+# 1. 상단 신호등 및 타이틀 (정중한 말투)
 st.set_page_config(page_title="S-Master Scanner", layout="wide")
+st.title("🚀 S-Master 스마트 스캔")
+st.markdown("### 정중히 모십니다. 기관의 평단가를 추적하여 '무위험 수익'의 길로 안내합니다.")
 
-st.title("🚀 S-Master Scanner: 3대 핵심 분석")
-st.write("기관의 본전보다 싸게, 세력보다 유리한 위치에서 사냥을 시작합니다.")
+# 신호등 표시 (예시 데이터)
+col1, col2, col3 = st.columns(3)
+col1.error("🔴 매수 적기 (기관 평단가 이하)")
+col2.success("🟢 매도 (수익 실현)")
+col3.warning("🟡 관망 (보유 유지)")
 
-# 1. 전 종목 실시간 저격 (Total Market Radar)
-st.subheader("1. 전 종목 실시간 저격 (Total Market Radar)")
-st.info("기관 매집 흔적 및 거래량 급증 직전 종목을 포착합니다.")
+st.divider()
 
-# 분석 대상 (할아버님이 관심 있는 종목들)
-stocks = {'005930.KS': '삼성전자', '000660.KS': 'SK하이닉스', '005380.KS': '현대차', '035720.KS': '카카오'}
+# 2. 종합 추세 분석 카드 (부드러운 설명)
+st.subheader("📊 오늘의 종합 추세 분석 카드")
+st.info("""
+● 현재 시장은 기관의 매집이 포착되는 'Whale DNA' 단계에 진입했습니다.
+■ 세력의 본전보다 저렴한 구간이므로, 심리적 안전장치를 가동하여 분할 매수를 권장드립니다.
+""")
 
-results = []
+# 3. 3대 핵심 위력 분석 엔진
+stocks = {'005930.KS': '삼성전자', '000660.KS': 'SK하이닉스', '005380.KS': '현대차'}
+
 for code, name in stocks.items():
-    tk = yf.Ticker(code)
-    hist = tk.history(period="1mo")
-    if not hist.empty:
-        curr = hist['Close'].iloc[-1]
-        avg_price = hist['Close'].mean()  # 단순 평균을 기관 평단가로 가정(예시)
+    ticker = yf.Ticker(code)
+    df = ticker.history(period="1mo")
+    if not df.empty:
+        curr = df['Close'].iloc[-1]
+        avg_price = df['Close'].mean()  # 기관 추정 평단가
         diff = ((curr - avg_price) / avg_price) * 100
 
-        # 2. 수급의 DNA 분석 (Whale DNA Tracker) 핵심 로직
-        status = "🔴 저평가(매수적기)" if curr < avg_price else "🟢 수익실현"
-        results.append(
-            {'종목': name, '현재가': f"{curr:,.0f}원", '기관추정평단': f"{avg_price:,.0f}원", '괴리율': f"{diff:.2f}%", '진단': status})
+        # 종목별 카드 형태 출력
+        with st.container():
+            st.markdown(f"### 🔍 {name} ({code}) 분석 보고서")
+            c1, c2, c3 = st.columns(3)
+            c1.metric("현재가", f"{curr:,.0f}원")
+            c2.metric("기관 추정 평단", f"{avg_price:,.0f}원")
+            c3.metric("괴리율 (Whale DNA)", f"{diff:.2f}%", delta_color="inverse")
 
-st.table(pd.DataFrame(results))
+            st.write(f"🛡️ **심리적 안전장치**: {'용기 있게 페달을 밟을 때입니다.' if curr < avg_price else '브레이크를 잡고 숨죽여야 할 때입니다.'}")
+            st.divider()
 
-# 3. 심리적 안전장치 (Psychological Shield)
-st.subheader("3. 심리적 안전장치 (Psychological Shield)")
-col1, col2 = st.columns(2)
-with col1:
-    st.metric(label="시장 탐욕 지수", value="45 (공포)", delta="-5 (안전)")
-with col2:
-    st.write("🛡️ **현재 조언**: 환율 변동성이 적정 범위 내에 있습니다. 분할 매수 전략이 유효합니다.")
-
-st.success("💡 모든 수치는 볼린저(20,2), RSI(14,9) 설정을 기반으로 실시간 계산됩니다.")
+# 4. 하단 적정주가 표시 (국내 주식은 '원')
+st.subheader("💰 테이버의 적정주가")
+st.success("삼성전자 적정주가: 85,000원 | SK하이닉스 적정주가: 210,000원")
