@@ -4,7 +4,7 @@ import pandas as pd
 # 1. 앱 설정
 st.set_page_config(page_title="S-Master Scanner", layout="wide")
 
-# 2. 화면 스타일 (어르신 맞춤 글꼴 및 박스)
+# 2. 화면 스타일 설정
 st.markdown("""
     <style>
     .report-card { background-color: #ffffff; padding: 25px; border-left: 10px solid #cc0000; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
@@ -13,7 +13,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 데이터 준비 (수급 우선순위 10개 및 금액 정보)
+# 3. 데이터 준비 및 상태 관리
 if 'target_stock' not in st.session_state:
     st.session_state.target_stock = ""
 
@@ -51,18 +51,22 @@ else:
     # 종목 상세 분석 (이수 할아버지 양식)
     st.write("---")
     st.header(f"📊 {search_input} 상세 수급 및 지표 진단")
-    st.error("매수(적기) - 기관의 평단가보다 저렴하며 무위험 수익 구간에 진입했습니다.")
+    
+    # 1. 상단 신호등 (기호로 표시)
+    st.error("🔴 매수(적기) - 기관의 평단가보다 저렴하며 무위험 수익 구간에 진입했습니다.")
 
+    # 2. 종합 추세 분석 카드
     st.markdown(f"""
     <div class="report-card">
         <h3>📋 추세 분석 카드</h3>
-        어르신, {search_input}의 수급을 입체적으로 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
-        무엇보다 기관의 진짜 매수 평단가보다 현재 주가가 낮은 무위험 수익 구간입니다. 
+        어르신, {search_input}의 수급을 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
+        무엇보다 <b>기관의 진짜 매수 평단가</b>보다 현재 주가가 낮은 무위험 수익 구간입니다.
     </div>
     """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:
+        # 3. 주가 및 수급 금액 판독
         st.write("### 💰 주가 및 수급 금액 판독")
         row = st.session_state.priority_data[st.session_state.priority_data['종목명'] == search_input]
         if not row.empty:
@@ -74,19 +78,20 @@ else:
             <div class='price-box'>
                 ● 현재 주가: {curr_p}<br>
                 ● 테이버 적정주가: {target_p}<br>
-                <hr>
+                <hr style='border: 0.5px solid #ffcccc;'>
                 ● 무위험 구간: {safe_p}
             </div>
             """, unsafe_allow_html=True)
         
     with col2:
+        # 4. 지표 표시 규칙 (BOLD 및 기호 준수)
         st.write("### 📊 지표 상세 진단 (20/2, 14/6, 14/9)")
         st.write("**Bollinger (20, 2)** ● 위치: 하단 밴드 지지")
         st.write("**RSI (14, 9)** ● 수치: 33 (매수 적기)")
         st.write("**Williams %R (14, 6)** ● 수치: -82 (바닥 확인)")
-        st.write("**MACD** ■ 추세: 상승 전환 포착")
+        st.write("**MACD** ■ 추세: 상승(▲) 전환 포착")
 
-    # 리스트로 돌아가기 버튼
+    # 5. 하단 복귀 버튼
     if st.button("⬅️ 전체 리스트로 돌아가기"):
         st.session_state.target_stock = ""
         st.rerun()
