@@ -1,97 +1,189 @@
 import streamlit as st
+import FinanceDataReader as fdr
+import yfinance as yf
 import pandas as pd
+from datetime import datetime, timedelta
+import pytz
+import requests
+from bs4 import BeautifulSoup
 
-# 1. 앱 설정
-st.set_page_config(page_title="S-Master Scanner", layout="wide")
-
-# 2. 화면 스타일 설정
+# 1. 화면 구성 및 할배 캐릭터 스타일 (완벽 유지)
+st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36068", layout="wide")
 st.markdown("""
     <style>
-    .report-card { background-color: #ffffff; padding: 25px; border-left: 10px solid #cc0000; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .price-box { background-color: #fff4f4; padding: 15px; border-radius: 10px; border: 1px solid #ffcccc; color: #cc0000; font-weight: bold; font-size: 1.2em; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 3.5em; font-weight: bold; }
+    .stApp { background-color: #ECEFF1; } 
+    * { font-weight: bold !important; font-family: 'Nanum Gothic', sans-serif; color: #263238; }
+    .vol-box { background-color: #E3F2FD; padding: 25px; border-radius: 15px; border: 4px solid #1E88E5; margin-bottom: 20px; }
+    .vol-main-text { font-size: 32px !important; color: #0D47A1 !important; margin-bottom: 10px; }
+    .vol-sub-text { font-size: 20px !important; color: #1565C0 !important; line-height: 1.6; background-color: #FFFFFF; padding: 12px; border-radius: 8px; border-left: 6px solid #1E88E5; }
+    .signal-box { padding: 25px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); }
+    .signal-text { font-size: 65px !important; font-weight: 900 !important; color: #FFFFFF !important; }
+    .trend-card { background-color: #FFFFFF; padding: 30px; border-radius: 20px; border: 5px solid #D32F2F; margin: 20px 0; }
+    .trend-title { font-size: 32px !important; color: #D32F2F !important; border-bottom: 3px solid #FFEBEE; padding-bottom: 12px; margin-bottom: 20px; }
+    .trend-item { font-size: 23px !important; line-height: 2.0; margin-bottom: 12px; }
+    .price-card { background-color: #FFFFFF; padding: 15px; border-radius: 10px; border: 2px solid #CFD8DC; text-align: center; }
+    .ind-box { background-color: #FFFFFF; padding: 22px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 520px; margin-bottom: 15px; box-shadow: 2px 2px 8px rgba(0,0,0,0.05); }
+    .ind-title { font-size: 26px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 15px; }
+    .ind-diag { font-size: 20px !important; color: #333333 !important; line-height: 1.8; background-color: #FDFDFD; padding: 15px; border-radius: 10px; border-left: 8px solid #D32F2F; }
+    /* 이평선 전용 스타일 */
+    .ma-box { background-color: #F1F8E9; border: 2px dashed #43A047; padding: 15px; border-radius: 10px; margin-top: 10px; font-size: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. 데이터 준비 및 상태 관리
-if 'target_stock' not in st.session_state:
-    st.session_state.target_stock = ""
-
-if 'priority_data' not in st.session_state:
-    data = {
-        "순위": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
-        "종목명": ["삼성전자", "실리콘투", "SK하이닉스", "현대차", "셀트리온", "기아", "KB금융", "포스코홀딩스", "NAVER", "LG화학"],
-        "현재주가": ["58,500원", "41,200원", "175,000원", "235,000원", "188,000원", "115,000원", "71,000원", "372,000원", "185,000원", "448,000원"],
-        "적정주가": ["75,000원", "55,000원", "210,000원", "290,000원", "230,000원", "145,000원", "88,000원", "450,000원", "220,000원", "560,000원"],
-        "무위험 구간": ["175,000원-185,000원", "40,000원-42,500원", "165,000원-172,000원", "230,000원-241,000원", "185,000원-195,000원", "112,000원-118,000원", "68,000원-72,000원", "365,000원-385,000원", "182,000원-192,000원", "432,000원-455,000원"],
-        "신호등": ["🔴 매수", "🔴 매수", "🟡 관망", "🔴 매수", "🔴 매수", "🟡 관망", "🔴 매수", "🟡 관망", "🟡 관망", "🔴 매수"]
-    }
-    st.session_state.priority_data = pd.DataFrame(data)
-
-# 4. 앱 메인 화면 구성
-st.title("🚀 S-Master Scanner (국내주식)")
-st.subheader("외인·기관 수급 입체 판독 및 무위험 수익 구간 포착")
-
-# 검색창
-search_input = st.text_input("🔍 종목명을 입력하세요", value=st.session_state.target_stock)
-
-if not search_input:
-    st.write("---")
-    st.header("📅 오늘 장마감 수급 사냥 리스트 (TOP 10)")
-    st.table(st.session_state.priority_data)
-    
-    st.write("### 🔍 종목 상세 분석 (터치 시 화면 전환)")
-    cols = st.columns(2)
-    for i in range(10):
-        name = st.session_state.priority_data['종목명'][i]
-        if cols[i % 2].button(f"🔍 {name}", key=f"btn_{name}"):
-            st.session_state.target_stock = name
-            st.rerun()
-else:
-    # 종목 상세 분석 (이수 할아버지 양식)
-    st.write("---")
-    st.header(f"📊 {search_input} 상세 수급 및 지표 진단")
-    
-    # 1. 상단 신호등 (기호로 표시)
-    st.error("🔴 매수(적기) - 기관의 평단가보다 저렴하며 무위험 수익 구간에 진입했습니다.")
-
-    # 2. 종합 추세 분석 카드
-    st.markdown(f"""
-    <div class="report-card">
-        <h3>📋 추세 분석 카드</h3>
-        어르신, {search_input}의 수급을 판독해 보니 기관이 아주 정밀하게 물량을 확보하고 있습니다. <br>
-        무엇보다 <b>기관의 진짜 매수 평단가</b>보다 현재 주가가 낮은 무위험 수익 구간입니다.
-    </div>
-    """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        # 3. 주가 및 수급 금액 판독
-        st.write("### 💰 주가 및 수급 금액 판독")
-        row = st.session_state.priority_data[st.session_state.priority_data['종목명'] == search_input]
-        if not row.empty:
-            curr_p = row['현재주가'].values[0]
-            target_p = row['적정주가'].values[0]
-            safe_p = row['무위험 구간'].values[0]
-            
-            st.markdown(f"""
-            <div class='price-box'>
-                ● 현재 주가: {curr_p}<br>
-                ● 테이버 적정주가: {target_p}<br>
-                <hr style='border: 0.5px solid #ffcccc;'>
-                ● 무위험 구간: {safe_p}
-            </div>
-            """, unsafe_allow_html=True)
+def display_global_risk():
+    st.markdown("### 🌍 글로벌 시장 및 국채 종합 전황")
+    try:
+        nasdaq = yf.Ticker("^IXIC").fast_info; sp500 = yf.Ticker("^GSPC").fast_info; tnx = yf.Ticker("^TNX").fast_info 
+        n_chg = (nasdaq.last_price / nasdaq.previous_close - 1) * 100
+        tnx_val = tnx.last_price; tnx_chg = (tnx_val / tnx.previous_close - 1) * 100
+        c1, c2, c3 = st.columns(3)
+        c1.metric("나스닥 (NASDAQ)", f"{nasdaq.last_price:,.2f}", f"{n_chg:.2f}%")
+        c2.metric("S&P 500 (SPX)", f"{sp500.last_price:,.2f}", f"{(sp500.last_price/sp500.previous_close-1)*100:.2f}%")
+        c3.metric("미 국채 10년물 (TNX)", f"{tnx_val:.3f}%", f"{tnx_chg:+.2f}%")
         
-    with col2:
-        # 4. 지표 표시 규칙 (BOLD 및 기호 준수)
-        st.write("### 📊 지표 상세 진단 (20/2, 14/6, 14/9)")
-        st.write("**Bollinger (20, 2)** ● 위치: 하단 밴드 지지")
-        st.write("**RSI (14, 9)** ● 수치: 33 (매수 적기)")
-        st.write("**Williams %R (14, 6)** ● 수치: -82 (바닥 확인)")
-        st.write("**MACD** ■ 추세: 상승(▲) 전환 포착")
+        if tnx_val >= 4.5: adv = "🚨 **[금리 발작: 비상]** 국채 금리가 4.5%를 넘어섰네! 기술주 성벽 무너질 수 있으니 진격을 멈추시게."
+        elif n_chg > 0.5 and tnx_chg < 0: adv = "🔥 **[골디락스 진입]** 지수는 오르고 금리는 내리니 기세 타시게."
+        else: adv = "🧐 **[눈치싸움 중]** 세력들이 간 보고 있구먼. 섣부른 판단은 독이네."
+        st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
+    except: st.error("⚠️ 데이터 호출 불가")
 
-    # 5. 하단 복귀 버튼
-    if st.button("⬅️ 전체 리스트로 돌아가기"):
-        st.session_state.target_stock = ""
-        st.rerun()
+st.title("🧐 이수할아버지의 냉정 진단기 v36068")
+display_global_risk(); st.divider()
+
+symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
+
+if symbol:
+    try:
+        # 이평선 120일치를 위해 기간을 600일로 넉넉히 잡았네
+        start_date = datetime.now() - timedelta(days=600); is_kr = symbol.isdigit()
+        now_tz = pytz.timezone('Asia/Seoul') if is_kr else pytz.timezone('US/Eastern')
+        now_local = datetime.now(now_tz)
+
+        if is_kr:
+            ticker = yf.Ticker(f"{symbol}.KS")
+            df = fdr.DataReader(symbol, start=start_date.strftime('%Y-%m-%d'))
+            try:
+                df_krx = fdr.StockListing('KRX')
+                name = df_krx[df_krx['Code'] == symbol]['Name'].values[0]
+            except: name = ticker.info.get('shortName', symbol).split(',')[0]
+            currency, fmt_p = "원", ",.0f"
+        else:
+            ticker = yf.Ticker(symbol); df = ticker.history(start=start_date)
+            name = ticker.info.get('shortName', symbol)
+            currency, fmt_p = "$", ",.2f"
+
+        if not df.empty:
+            df = df.ffill().dropna()
+            
+            if is_kr:
+                url = f"https://finance.naver.com/item/main.naver?code={symbol}"
+                res = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+                soup = BeautifulSoup(res.text, 'html.parser')
+                p = float(soup.select_one(".no_today .blind").text.replace(",", ""))
+                v_curr = float(soup.select(".no_info .blind")[3].text.replace(",", ""))
+                prev_p = float(df['Close'].iloc[-1])
+            else:
+                df_today = ticker.history(period='1d')
+                if not df_today.empty:
+                    p = float(df_today['Close'].iloc[-1])
+                    v_curr = float(df_today['Volume'].iloc[-1])
+                else:
+                    p = float(df['Close'].iloc[-1])
+                    v_curr = float(df['Volume'].iloc[-1])
+
+            v_avg5 = float(df['Volume'].iloc[-6:-1].mean())
+            v_ratio = (v_curr / v_avg5) * 100 if v_avg5 > 0 else 0
+            prev_p = float(df['Close'].iloc[-2])
+            if is_kr and p == prev_p and len(df) > 2: prev_p = float(df['Close'].iloc[-3])
+            p_diff, p_chg = p - prev_p, (p - prev_p) / prev_p * 100
+
+            s_h, s_m = (9, 0) if is_kr else (9, 30)
+            elapsed = (now_local.hour - s_h) * 60 + (now_local.minute - s_m)
+            if now_local.weekday() >= 5 or elapsed > 390: elapsed = 390
+            elif elapsed < 10: elapsed = 10
+            vol_strength = v_ratio / (elapsed / 390)
+
+            # [수선] 이동평균선(MA) 성벽 보강
+            # [수선] 이동평균선(MA) 성벽 보강 - 5일선 기세 판독 추가
+            df['MA5'] = df['Close'].rolling(5).mean()
+            df['MA20'] = df['Close'].rolling(20).mean()
+            df['MA60'] = df['Close'].rolling(60).mean()
+            df['MA120'] = df['Close'].rolling(120).mean()
+            
+            ma5, ma5_p = df['MA5'].iloc[-1], df['MA5'].iloc[-2]
+            ma20, ma60, ma120 = df['MA20'].iloc[-1], df['MA60'].iloc[-1], df['MA120'].iloc[-1]
+            
+            if ma5 > ma20 > ma60 > ma120: 
+                ma_status, ma_col = "🌈 정배열 (천하무적 진격)", "#2E7D32"
+            elif ma5 < ma20 < ma60 < ma120: 
+                ma_status, ma_col = "💀 역배열 (지하실 탈출불가)", "#C62828"
+            else: 
+                # [사령관의 명] 혼조세일 때 5일선의 각도와 위치를 세밀하게 짚어주네
+                angle = "상향 우클릭" if ma5 > ma5_p else "하향 곡선"
+                pos = "성벽 위" if ma5 > ma20 else "성벽 아래"
+                ma_status, ma_col = f"🌀 혼조세 (5일선 {angle} / {pos})", "#1565C0"
+
+            # 전광판 (자네가 고친 전일비 로직을 빳빳하게 유지했네)
+            st.markdown("### 📊 현재주가 및 이동평균 성벽")
+            display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
+            st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
+                <p style='font-size:35px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p>
+                <p style='font-size:30px; color:#FF4B4B; font-weight:bold; margin:10px 0 0 0;'>{display_price}</p>
+                <div class='ma-box' style='color:{ma_col};'>🚩 <b>이평선:</b> {ma_status} | 5일: {ma5:{fmt_p}} | 20일: {ma20:{fmt_p}} | 60일: {ma60:{fmt_p}}</div>
+                </div>""", unsafe_allow_html=True)
+
+            if v_ratio == 0: v_status, v_msg = "장전 대기", "전열을 가다듬으시게."
+            elif v_ratio < 50: v_status, v_msg = "기세부족", "아군 화력을 더 기다리시게."
+            elif v_ratio < 100: v_status, v_msg = "매집시작", "눈여겨보시게."
+            elif v_ratio < 150: v_status, v_msg = "주의단계", "추세를 타시게."
+            else: v_status, v_msg = "과열폭발", "냉정하게 대응하시게."
+
+            v_adv = f"✅ 현재 거래율 {v_ratio:.1f}%로 {v_msg}"
+            st.markdown(f"""<div class='vol-box'><div style='font-size: 32px !important; font-weight: bold; color: #0D47A1; margin-bottom: 10px;'>📊 거래량 전황: {v_status} ({v_ratio:.1f}%)</div>
+                <div class='vol-sub-text' style='font-size: 22px !important; color: #1565C0 !important; font-weight: bold;'>{v_adv}</div></div>""", unsafe_allow_html=True)
+
+            # 신호등
+            if p >= up_b or rsi_val >= 60: sig, col, s_adv = "🟢 매도권 진입", "#388E3C", f"● {'👺 불지옥 문턱일세! 탐욕 버리고 익절하시게.' if rsi_val >= 60 else '과열권일세! 수익 챙기시게.'}"
+            elif p <= (low_b * 1.005) or rsi_val <= 35: sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
+            else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세. 지표 끝단을 기다리시게."
+            st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:20px;'>{s_adv}</p></div>", unsafe_allow_html=True)
+
+            c1, c2, c3 = st.columns(3)
+            with c1: st.markdown(f"<div class='price-card'><p>⚖️ 공략 대기선</p><p style='color:#388E3C; font-size:32px;'>{format(low_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='price-card'><p>🎯 수확 목표선</p><p style='color:#D32F2F; font-size:32px;'>{format(up_b, fmt_p)}</p></div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='price-card'><p>🛡️ 성벽(방어선)</p><p style='color:#E65100; font-size:32px;'>{format(defense_line, fmt_p)}</p></div>", unsafe_allow_html=True)
+
+            # 필살 전략 (이평선 분석 추가)
+            ma_adv = f"5일선({format(ma5, fmt_p)}) 위에서 기세가 좋네." if p > ma5 else f"5일선({format(ma5, fmt_p)}) 밑으로 고개 숙였어."
+            adv1 = f"1. **이평 성벽:** {ma_status} 상태이며, {ma_adv}"
+            adv2 = f"2. **성벽 사수:** 현재 주가가 성벽({format(defense_line, fmt_p)}) {'아래' if p < defense_line else '위'}일세."
+            adv3 = f"3. **엔진(MACD):** {'정회전' if m_l > s_l else '역회전'} 중일세!"
+
+            m_diff, m_diff_p = m_l - s_l, m_p - s_p
+            if p >= up_b or rsi_val >= 60:
+                final_adv = f"🚨 **[최종 결론]** {v_status}! 성벽({format(defense_line, fmt_p)}) 위이나 과열권일세. **분할 익절**하시게!"
+            elif p <= (low_b * 1.02):
+                final_adv = f"🔥 **[최종 결론]** {v_status}! 바닥권 탈환 중이네. **정찰대 투입** 고려하시게."
+            else:
+                final_adv = f"📈 **[최종 결론]** {v_status}! {ma_status} 유지하며 추세 관망하시게."
+
+            st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
+                <div class='trend-item'>{adv1}</div><div class='trend-item'>{adv2}</div><div class='trend-item'>{adv3}</div>
+                <hr style='border:1px solid #FFEBEE;'><div class='trend-item' style='color:#D32F2F; font-size:25px !important;'>{final_adv}</div></div>""", unsafe_allow_html=True)
+
+            st.divider(); i1, i2, i3, i4 = st.columns(4)
+            with i1: # Bollinger
+                bb_diag = "⚠️ **[과열 진입]** 온도가 높네. 수익 확정하시게." if p >= up_b or rsi_val >= 60 else ("🏰 **[성벽 사수]** 안정적 진격 중." if p > mid_line else "🏚️ **[성문 함락]** 절대 금지!")
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+            with i2: # RSI
+                is_div = p > prev_p and rsi_val < rsi_prev
+                r_diag = f"지수 {rsi_val:.2f}로 {'👺 불지옥' if rsi_val >= 60 else ('🧊 냉골' if rsi_val <= 35 else '중립')}일세."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+            with i3: # Williams %R
+                w_diag = f"지수 {will_val:.2f}로 {'🧨 천장' if will_val >= -20 else ('🏳️ 개미항복' if will_val <= -80 else '중간지대')}일세."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
+            with i4: # MACD
+                m_diag = "● 엔진 **정회전**!" if m_l > s_l else "● 엔진 **역회전**!"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+
+    except Exception as e: st.error(f"👵 아이구! 오류: {e}")
