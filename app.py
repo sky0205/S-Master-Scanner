@@ -104,29 +104,26 @@ if symbol:
             vol_strength = v_ratio / (elapsed / 390)
 
             # [수선] 이동평균선(MA) 성벽 보강
+            # [수선] 이동평균선(MA) 성벽 보강 - 5일선 기세 판독 추가
             df['MA5'] = df['Close'].rolling(5).mean()
             df['MA20'] = df['Close'].rolling(20).mean()
             df['MA60'] = df['Close'].rolling(60).mean()
             df['MA120'] = df['Close'].rolling(120).mean()
-            ma5, ma20, ma60, ma120 = df['MA5'].iloc[-1], df['MA20'].iloc[-1], df['MA60'].iloc[-1], df['MA120'].iloc[-1]
             
-            if ma5 > ma20 > ma60 > ma120: ma_status, ma_col = "🌈 정배열 (천하무적 진격)", "#2E7D32"
-            elif ma5 < ma20 < ma60 < ma120: ma_status, ma_col = "💀 역배열 (지하실 탈출불가)", "#C62828"
-            else: ma_status, ma_col = "🌀 혼조세 (성벽 재정비)", "#1565C0"
+            ma5, ma5_p = df['MA5'].iloc[-1], df['MA5'].iloc[-2]
+            ma20, ma60, ma120 = df['MA20'].iloc[-1], df['MA60'].iloc[-1], df['MA120'].iloc[-1]
+            
+            if ma5 > ma20 > ma60 > ma120: 
+                ma_status, ma_col = "🌈 정배열 (천하무적 진격)", "#2E7D32"
+            elif ma5 < ma20 < ma60 < ma120: 
+                ma_status, ma_col = "💀 역배열 (지하실 탈출불가)", "#C62828"
+            else: 
+                # [사령관의 명] 혼조세일 때 5일선의 각도와 위치를 세밀하게 짚어주네
+                angle = "상향 우클릭" if ma5 > ma5_p else "하향 곡선"
+                pos = "성벽 위" if ma5 > ma20 else "성벽 아래"
+                ma_status, ma_col = f"🌀 혼조세 (5일선 {angle} / {pos})", "#1565C0"
 
-            delta = df['Close'].diff(); gain = (delta.where(delta > 0, 0)).rolling(14).mean(); loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rsi_series = 100 - (100 / (1 + (gain / (loss + 1e-10))))
-            rsi_val, rsi_prev = rsi_series.iloc[-1], rsi_series.iloc[-2]
-            h14, l14 = df['High'].rolling(14).max(), df['Low'].rolling(14).min()
-            will_val = (h14.iloc[-1] - p) / (h14.iloc[-1] - l14.iloc[-1] + 1e-10) * -100
-            macd = df['Close'].ewm(span=12).mean() - df['Close'].ewm(span=26).mean()
-            sig_line = macd.ewm(span=9).mean()
-            m_l, s_l, m_p, s_p = macd.iloc[-1], sig_line.iloc[-1], macd.iloc[-2], sig_line.iloc[-2]
-            df['Std'] = df['Close'].rolling(20).std()
-            mid_line = df['MA20'].iloc[-1]; up_b = mid_line + (df['Std'].iloc[-1] * 2); low_b = mid_line - (df['Std'].iloc[-1] * 2)
-            peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
-
-            # 전광판
+            # 전광판 (자네가 고친 전일비 로직을 빳빳하게 유지했네)
             st.markdown("### 📊 현재주가 및 이동평균 성벽")
             display_price = f"{p:{fmt_p}}{currency} (전일비: {p_diff:+{fmt_p}} / {p_chg:+.2f}%)"
             st.markdown(f"""<div style='background-color:#f8f9fa; padding:20px; border-radius:10px; border-left:10px solid #1565C0;'>
