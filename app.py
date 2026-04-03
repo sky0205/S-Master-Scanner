@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # 1. 화면 구성 및 할배 캐릭터 스타일 (이미지 양식 완벽 재현)
-st.set_page_config(page_title="S-Master-Scanner v36063", layout="wide")
+st.set_page_config(page_title="S-Master-Scanner v36064", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
@@ -24,13 +24,12 @@ st.markdown("""
     .ind-box { background-color: #FFFFFF; padding: 25px; border-radius: 15px; border: 2.5px solid #90A4AE; min-height: 550px; margin-bottom: 20px; }
     .ind-title { font-size: 28px !important; color: #1976D2 !important; border-bottom: 2px solid #EEEEEE; padding-bottom: 10px; margin-bottom: 18px; }
     .ind-diag { font-size: 21px !important; color: #333333 !important; line-height: 1.9; background-color: #FDFDFD; padding: 18px; border-radius: 12px; border-left: 10px solid #D32F2F; }
-    .ma-status-box { background-color: #F1F8E9; border: 2px dashed #43A047; padding: 18px; border-radius: 12px; margin: 15px 0; font-size: 24px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🧐 S-Master-Scanner v36063")
+st.title("🧐 S-Master-Scanner v36064")
 
-symbol = st.text_input("📊 분석할 종목번호 입력 (예: 005930)", "000100")
+symbol = st.text_input("📊 분석할 종목번호 입력", "000100")
 
 if symbol:
     try:
@@ -50,18 +49,18 @@ if symbol:
             prev_p = float(df['Close'].iloc[-2]); name = symbol; currency, fmt_p = "$", ",.2f"
 
         if not df.empty:
-            # [1. 이동평균 및 성벽 수치 계산]
+            # [1. 수치 계산]
             df['MA20'] = df['Close'].rolling(20).mean(); df['Std'] = df['Close'].rolling(20).std()
             up_b, low_b = df['MA20'].iloc[-1] + (df['Std'].iloc[-1] * 2), df['MA20'].iloc[-1] - (df['Std'].iloc[-1] * 2)
             peak_20 = float(df['High'].iloc[-21:-1].max()); defense_line = peak_20 * 0.93
-
-            # [2. 상단 가격 및 이평선 정보]
             p_chg = (p - prev_p) / prev_p * 100
+
+            # [2. 상단 가격 정보]
             st.markdown(f"<div style='background-color:#f8f9fa; padding:25px; border-radius:15px; border-left:12px solid #1565C0;'><p style='font-size:40px; color:#1565C0; font-weight:bold; margin:0;'>{name} ({symbol})</p><p style='font-size:36px; color:#FF4B4B; font-weight:bold; margin:15px 0 0 0;'>{p:{fmt_p}}{currency} ({p_chg:+.2f}%)</p></div>", unsafe_allow_html=True)
 
             # [3. 대형 신호등]
             if p >= (up_b * 0.98): sig, col, s_adv = "🟢 매도권 진입", "#388E3C", "● 👺 불지옥 문턱일세! 익절하시게."
-            elif p <= (low_b * 1.02): sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 겁먹지 말고 보따리 푸시게."
+            elif p <= (low_b * 1.02): sig, col, s_adv = "🔴 매수권 진입", "#D32F2F", "● 🧊 바닥권일세. 보따리 푸시게."
             else: sig, col, s_adv = "🟡 관망 및 대기", "#FBC02D", "● 눈치싸움 중일세."
             st.markdown(f"<div class='signal-box' style='background-color:{col};'><p class='signal-text'>{sig}</p><p style='color:white; font-size:24px;'>{s_adv}</p></div>", unsafe_allow_html=True)
 
@@ -73,8 +72,8 @@ if symbol:
 
             # [5. 실전 필살 대응 전략]
             st.markdown(f"""<div class='trend-card'><div class='trend-title'>⚔️ {name} 실전 필살 대응 전략</div>
-                <div class='trend-item'>1. **성벽 사수:** 현재가 {p:{fmt_p}}원, 성벽 {defense_line:{fmt_p}}원 대비 {'위' if p>defense_line else '아래'}일세. {'성벽 위 안착 중이니 진격 준비!' if p > defense_line else '성벽이 찢겼으니 절대 매수 금지!'}</div>
-                <div class='trend-item'>2. **목표 수확:** 주가가 {format(up_b, fmt_p)}원 근처에 도달하면 욕심 버리고 수확(익절)하시게.</div>
+                <div class='trend-item'>1. **성벽 사수:** 현재가 {p:{fmt_p}}원, 성벽 {defense_line:{fmt_p}}원 {'위' if p>defense_line else '아래'}에 있네. {'성벽 위 안착 중이니 진격 준비!' if p > defense_line else '성벽이 함락됐으니 절대 칼 뽑지 마시게!'}</div>
+                <div class='trend-item'>2. **목표 수확:** 주가가 {format(up_b, fmt_p)}원 근처에 도달하면 욕심 버리고 수익을 빳빳하게 챙기시게.</div>
                 <div class='trend-item'>3. **대기 매수:** 지표가 식어 {format(low_b, fmt_p)}원 근처에 오면 냉정하게 보따리 푸시게.</div>
                 <hr style='border:1px solid #FFEBEE;'>
                 <div class='trend-item' style='color:#D32F2F; font-size:28px !important;'>🎯 **최종 결론:** {'분할 수확!' if p>=up_b*0.95 else ('정찰대 투입!' if p<=low_b*1.05 else '매복 관망!')}</div></div>""", unsafe_allow_html=True)
@@ -88,17 +87,17 @@ if symbol:
             m_l, s_l = macd.iloc[-1], sig_line.iloc[-1]
 
             st.divider(); i1, i2, i3, i4 = st.columns(4)
-            with i1: # Bollinger
-                bb_diag = "⚠️ [과열 진입] 성벽 사수 중이나 온도가 높네. 수익 챙기며 다음 성벽 준비하시게." if p >= up_b else ("🏰 [성벽 사수] 안정적 진격 중일세. 성벽 무너지기 전까진 홀딩!" if p > df['MA20'].iloc[-1] else "🏚️ [성문 함락] 성벽 밑일세. 엔진 시동 전까진 절대 금지!")
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger (기세)</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
-            with i2: # RSI
-                r_diag = f"지수 {rsi_val:.2f}로 {'👺 불지옥' if rsi_val >= 60 else ('🧊 냉골' if rsi_val <= 35 else '중립')} 상태일세. {'천장에 다 왔으니 수확하시게.' if rsi_val >= 60 else '남들 무서워할 때 냉정하게 보따리 푸시게.'}"
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:50px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
-            with i3: # Williams %R
-                w_diag = f"지수 {will_val:.2f}로 {'🧨 천장광기' if will_val >= -20 else ('🏳️ 개미항복' if will_val <= -80 else '중간지대')}일세. {'비수 꽂히기 전에 수확(익절)하시게.' if will_val >= -20 else '고개 들 때까지 매복하시게.'}"
+            with i1:
+                bb_diag = "⚠️ [과열 진입] 성벽 사수 중이나 온도가 높네. 익절하며 다음 성벽을 대비하시게." if p >= up_b else ("🏰 [성벽 사수] 안정적 진격 중일세." if p > df['MA20'].iloc[-1] else "🏚️ [성문 함락] 절대 금지!")
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>Bollinger</p><p class='ind-diag'>{bb_diag}</p></div>", unsafe_allow_html=True)
+            with i2:
+                r_diag = f"지수 {rsi_val:.2f}로 {'👺 불지옥' if rsi_val >= 60 else ('🧊 냉골' if rsi_val <= 35 else '중립')} 상태일세. {'천장이니 수확하시게.' if rsi_val >= 60 else '냉정하게 보따리 푸시게.'}"
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI</p><p style='font-size:50px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
+            with i3:
+                w_diag = f"지수 {will_val:.2f}로 {'🧨 천장광기' if will_val >= -20 else ('🏳️ 개미항복' if will_val <= -80 else '중간지대')}일세. {'비수 꽂히기 전에 익절하시게.' if will_val >= -20 else '매복하시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:50px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
-            with i4: # MACD
-                m_diag = "● 엔진 **정회전** 중! 기세 붙었으니 성벽 사수 보며 진격하시게." if m_l > s_l else "● 엔진 **역회전** 중! 거꾸로 도는 차에 올라타면 객사하네."
-                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD (엔진)</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
+            with i4:
+                m_diag = "● 엔진 **정회전**! 기세 좋구먼." if m_l > s_l else "● 엔진 **역회전**! 절대 금지."
+                st.markdown(f"<div class='ind-box'><p class='ind-title'>MACD</p><p class='ind-diag'>{m_diag}</p></div>", unsafe_allow_html=True)
 
-    except Exception as e: st.error(f"👵 아이구! 오류: {e}")
+    except Exception as e: st.error(f"👵 오류: {e}")
