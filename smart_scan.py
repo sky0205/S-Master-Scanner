@@ -49,7 +49,7 @@ def display_global_risk():
         st.info(f"🧐 이수 할배의 글로벌 판독: {adv}")
     except: st.error("⚠️ 글로벌 데이터 호출 불가")
 
-st.title("🧐 이수할아버지의 냉정 진단기 v36056")
+st.title("🧐 이수할아버지의 주식 진단기 v36056")
 display_global_risk(); st.divider()
 
 symbol = st.text_input("📊 분석할 종목번호 또는 티커 입력", "005930")
