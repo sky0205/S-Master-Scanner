@@ -1,7 +1,3 @@
-
-
-
-
 import streamlit as st
 import FinanceDataReader as fdr
 import yfinance as yf
