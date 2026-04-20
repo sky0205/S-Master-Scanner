@@ -9,7 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 
 # 1. 화면 구성 및 할배 캐릭터 스타일 (엄수)
-st.set_page_config(page_title="이수할아버지의 냉정 진단기 v36056", layout="wide")
+st.set_page_config(page_title="이수할아버지의 주식 진단기 v36056", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #ECEFF1; } 
