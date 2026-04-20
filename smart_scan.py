@@ -174,12 +174,12 @@ if symbol:
             
             with i2: # RSI
                 is_div = (p > prev_p and rsi_val < rsi_prev)
-                r_diag = f"● 지수 {rsi_val:.2f}: {'👺 불지옥 문턱!' if rsi_val >= 60 else '🧊 냉골 바닥!' if rsi_val <= 35 else '중립 구간.'} " + \
+                r_diag = f"● 지수 {rsi_val:.2f}: {'👺 불지옥 문턱!' if rsi_val >= 60 else '🧊 냉골 바닥!' if rsi_val <= 35 else '⚖️ 중립 구간일세. 지표 끝단을 빳빳하게 기다리시게.'} "
                          f"{'🚨 [배신 포착] 주가는 오르나 온도는 식네! 가짜 상승 주의!' if is_div else ''}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>RSI (온도)</p><p style='font-size:40px; color:#E65100;'>{rsi_val:.2f}</p><p class='ind-diag'>{r_diag}</p></div>", unsafe_allow_html=True)
             
             with i3: # Williams %R
-                w_diag = f"● 지수 {will_val:.2f}: {'🧨 천장 광기! 비수 꽂히기 전 수확하시게.' if will_val >= -20 else '📉 하락 가속! 바닥 확인 전 자숙하시게.' if will_val <= -80 else '추세 탐색 중.'}"
+                w_diag = f"● 지수 {will_val:.2f}: {'🚀 천장 광기! 비수 꽂히기 전 수확하시게.' if will_val >= -20 else '📉 하락 가속! 바닥 확인 전 자중하시게.' if will_val <= -80 else '🌫️ 안갯속 구간이네. 기세가 꺾이는지 눈 부라리고 보시게.'}"
                 st.markdown(f"<div class='ind-box'><p class='ind-title'>Williams %R</p><p style='font-size:40px; color:#E65100;'>{will_val:.2f}</p><p class='ind-diag'>{w_diag}</p></div>", unsafe_allow_html=True)
             
             with i4: # MACD
